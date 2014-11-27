@@ -1,0 +1,12 @@
+{
+  "name": "mapreducejs-server",
+  "version": "0.0.1",
+  "description": "Simple Map Reduce server written in TypeScript/JavaScript",
+  "main": "server.js",
+  "author": "Marc-André Bühler",
+  "dependencies": {
+    "express": "^4.10.1",
+    "node-uuid": "^1.4.1",
+    "socket.io": "^1.2.0"
+  }
+}

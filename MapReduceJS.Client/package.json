@@ -1,0 +1,9 @@
+{
+  "name": "mapreducejs-client",
+  "version": "0.0.1",
+  "description": "Simple Map Reduce client written in TypeScript/JavaScript",
+  "author": "Marc-André Bühler",
+  "dependencies": {
+    "socket.io": "^1.2.0"
+  }
+}
