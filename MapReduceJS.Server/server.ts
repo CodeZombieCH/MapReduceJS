@@ -1,4 +1,8 @@
-﻿// Setup basic express server
+﻿/// <reference path="typings/socket.io/socket.io.d.ts" />
+/// <reference path="typings/node/node.d.ts" />
+
+
+// Setup basic express server
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
@@ -39,7 +43,7 @@ var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 1000000, 1000
 
 
 // Socket.io
-var workers = {};
+var workers = [];
 var count = 0;
 
 io.on('connection', function(socket) {
@@ -47,26 +51,26 @@ io.on('connection', function(socket) {
 	socket.on('workerReady', function (message) {
 		console.log('worker ready');
 
-		var workerId = uuid.v4();
-
 		// we store the newly assigned worker id in the socket session for this worker
-		socket.worker = new core.Worker(workerId);
+		var worker = socket.worker = new core.Worker(uuid.v4());
 
 		// add the client's username to the global list
-		workers[workerId] = {
-			workerId: workerId
-		};
+		workers.push(worker);
 
 		socket.emit('workerReady', socket.worker);
+
+		socket.broadcast.emit('statsUpdate', workers.length);
 	});
 
 	socket.on('getJob', function(message) {
 		console.log('worker #' + socket.worker.workerId + ' is requesting a job');
 
-		console.log('assigning job');
+		console.log('assigning job...');
 
 		var jobAssignment = scheduler.getJob(socket.worker);
 		socket.assignment = jobAssignment;
+
+		console.log('assigned job #' + jobAssignment.AssignmentId);
 
 		socket.emit('getJob', jobAssignment.getClientAssignment());
 		//socket.emit('getJob', { parameters: { from: count, to: (count += 100000) } });
@@ -87,6 +91,18 @@ io.on('connection', function(socket) {
 		scheduler.completeJob(jobAssignment, clientJobAssignement.result);
 
 		socket.emit('completeJob');
+	});
+
+	socket.on('stats', function() {
+		socket.emit('stats', workers.length);
+	});
+
+	socket.on('disconnect', function() {
+		console.log('worker #' + (socket.worker && socket.worker.workerId || undefined) + ' disconnected');
+
+		workers.remove(socket.worker);
+
+		socket.broadcast.emit('statsUpdate', workers.length);
 	});
 });
 

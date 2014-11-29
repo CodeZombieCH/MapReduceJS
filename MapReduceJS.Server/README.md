@@ -9,10 +9,13 @@ on the client side and Node.js on the server side.
 
 - Node.js
 - npm
+- tsc
+- tsd (to be exact: tsd@next)
 
 ## Installation
 
     npm install
+    tsd reinstall
 
 ## Run
 
