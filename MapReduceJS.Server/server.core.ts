@@ -1,23 +1,102 @@
-﻿export class Job {
+﻿var uuid = require('node-uuid');
+
+
+export interface IClientJobAssignment {
+	assignmentId: string;
+	jobId: number;
+	parameters: any;
+	result: any;
+}
+
+export class ClientJobAssignment implements IClientJobAssignment {
+	constructor(public assignmentId: string,
+		public jobId: number,
+		public parameters: any,
+		public result: any) {
+	}
+}
+
+/**
+ * A map reduce job supposed to be completed by 1 or more workers
+ */
+export class Job {
 	public jobId: number;
 	public parameters: any;
+	/**
+	 * Jobs currently assigned to workers
+	 */
 	public assignments: JobAssignment[];
 	public status: Status;
+	public result: any;
 
 	constructor() {
 		this.assignments = [];
 		this.status = Status.Ready;
 	}
+
+	hasCompleted(): boolean {
+		for(var i = 0; i < this.assignments.length; i++) {
+			var assignment = this.assignments[i];
+
+			// Skip completed assignments
+			if(!assignment.completed) return false;
+		}
+
+		return true;
+	}
+
+	applyResults() {
+		/*
+		 * TODO: Compare all individual results calculated by the workers
+		 * If the are the same, assume result is valid. If not, do whatever makes sense :P
+		*/
+
+		// For now, we just take the result of the first worker
+		this.result = this.assignments[0].result;
+	}
 }
 
+/**
+ * TODO: Make immutable
+ */
 export class JobAssignment {
+	private assignmentId: string;
+	private job: Job
+	public worker: Worker
 	public assigned: Date;
 	public completed: Date;
 	public timedOut: Date;
 	public result: any;
 
-	constructor(public job: Job, public worker: Worker) {
+	get AssignmentId(): string {
+		return this.assignmentId;
+	}
+
+	get Job(): Job {
+		return this.job;
+	}
+
+	constructor(job: Job) {
+		this.job = job;
+		this.assignmentId = uuid.v4();
+	}
+
+	assignWorker(worker: Worker) {
 		this.assigned = new Date();
+		this.worker = worker;
+	}
+
+	hasTimedOut(assignmentTTL: number) {
+		return (this.assigned.getTime() + assignmentTTL*1000 < new Date().getTime());
+	}
+
+	getClientAssignment(): IClientJobAssignment {
+		return new ClientJobAssignment(
+			this.assignmentId,
+			this.job.jobId,
+			this.job.parameters,
+			undefined
+		);
 	}
 }
 
@@ -33,7 +112,7 @@ export enum Status {
 }
 
 export class Scheduler {
-	private assignSingleJobToNWorker: number = 3;
+	private assignSingleJobToNWorker: number = 1;
 	private maxActiveJobs: number = 5;
 	private assignmentTTL: number = 30; // Seconds
 
@@ -68,7 +147,7 @@ export class Scheduler {
 			this.activeJobs.push(job);
 
 			// Get an assignment
-			var assignment = this.getJobassignment(job, worker);
+			var assignment = this.getJobAssignment(job, worker);
 			return assignment;
 		}
 		else {
@@ -88,7 +167,7 @@ export class Scheduler {
 				var job = this.activeJobs[i];
 
 				// Try to get an assignment
-				var assignment = this.getJobassignment(job, worker);
+				var assignment = this.getJobAssignment(job, worker);
 
 				if(assignment) return assignment;
 			}
@@ -104,20 +183,40 @@ export class Scheduler {
 		}
 	}
 
-	public completeJob(job: JobAssignment) {
+	public completeJob(jobAssignment: JobAssignment, result: any) {
+		// Check if timed out
+		if(jobAssignment.hasTimedOut(this.assignmentTTL)) {
+			console.log('Assignment timed out. Ignoring assignment.');
+			return;
+		}
 
+		jobAssignment.completed = new Date();
+		jobAssignment.result = result;
+
+		// Update job
+		var job = jobAssignment.Job;
+		if(job.hasCompleted()) {
+			job.applyResults();
+
+			// Tell the task the job has completed, so it can store the results
+			this.task.completeJob(job);
+
+			this.activeJobs.remove(job);
+			this.completedJobs.push(job);
+		}
 	}
 
-	private getJobassignment(job: Job, worker: Worker) : JobAssignment {
+	private getJobAssignment(job: Job, worker: Worker) : JobAssignment {
 		// Check if we have enough redundancy (= workers working at the same job)
 		if(job.assignments.length < this.assignSingleJobToNWorker) {
 			// Create a new assignment
-			var assignment = new JobAssignment(job, worker);
+			var assignment = new JobAssignment(job);
+			assignment.assignWorker(worker);
 			job.assignments.push(assignment);
 			return assignment;
 		}
 
-		// Try to find an outdated assignment
+		// Try to find an timed out assignment
 		for(var i = 0; i < job.assignments.length; i++) {
 			var assignment = job.assignments[i];
 
@@ -125,7 +224,7 @@ export class Scheduler {
 			if(assignment.completed) continue;
 
 			// Check TTL
-			if(assignment.assigned.getTime() + this.assignmentTTL < new Date().getTime()) {
+			if(assignment.hasTimedOut(this.assignmentTTL)) {
 				// Timed out
 				// Assign new worker
 				assignment.worker = worker;
@@ -141,6 +240,7 @@ export class Scheduler {
 
 export interface IMapReduceTask {
 	createJob(): Job;
+	completeJob(job: Job);
 	hasJobs(): boolean;
 }
 
@@ -153,6 +253,8 @@ export class PrimesMapReduceTask implements IMapReduceTask {
 	public createJob(): Job {
 		if(!this.hasJobs()) return null;
 
+		console.log('Task: creating job')
+
 		var job = new Job();
 		job.jobId = this.current;
 		job.parameters = { from: this.current, to: this.current + this.chunkSize - 1 };
@@ -162,16 +264,33 @@ export class PrimesMapReduceTask implements IMapReduceTask {
 		return job;
 	}
 
+	public completeJob(job: Job) {
+		console.log('Task: completing job')
+		console.log('Task: highest prime number of job: ' + job.result[job.result.length - 1]);
+
+		// TODO: Persist, reduce, whatever you need
+	}
+
 	public hasJobs() : boolean {
 		return (this.current + this.chunkSize) < this.to;
-	}	
+	}
 }
 
 
 // Utils
 interface Array<T> {
 	random(): T;
+	remove(item: T): T
 }
+
 Array.prototype.random = function() {
 	return this[Math.floor(Math.random() * this.length)]
+}
+
+Array.prototype.remove = function(value) {
+	var index = this.indexOf(value);
+	if(index != -1) {
+		return this.splice(index, 1);
+	}
+	return undefined;
 }
