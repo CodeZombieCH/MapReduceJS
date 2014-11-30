@@ -1,6 +1,7 @@
 ﻿// Manager
 // Supposed to run on the main thread
 
+
 /**
 * Worker manager running in the main thread,
 * starting web workers that do the actual work.

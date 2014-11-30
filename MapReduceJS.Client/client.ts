@@ -7,6 +7,10 @@ interface IWorker {
 	workerId: string;
 }
 
+// Extend navigator
+interface Navigator {
+	hardwareConcurrency: number;
+}
 
 /**
  * Worker manager running in the main thread,

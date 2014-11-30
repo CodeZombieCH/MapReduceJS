@@ -187,7 +187,7 @@ export class Scheduler {
 	public completeJob(jobAssignment: JobAssignment, result: any) {
 		// Check if timed out
 		if(jobAssignment.hasTimedOut(this.assignmentTTL)) {
-			console.log('Assignment timed out. Ignoring assignment.');
+			console.log('Assignment timed out. Ignoring assignment. (' + (new Date().getTime() - jobAssignment.assigned.getTime())/1000 + 's)');
 			return;
 		}
 
