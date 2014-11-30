@@ -23,7 +23,7 @@ class WorkerManager {
 	 * Creates and starts workers
 	 */
 	private initWorkers() {
-		var cores = 4//navigator.hardwareConcurrency || 4;
+		var cores = navigator.hardwareConcurrency || 4;
 
 		console.log('creating workers...');
 

@@ -5,7 +5,7 @@ var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
-var port = 3000;
+var port = process.env.PORT || 3000;
 var uuid = require('node-uuid');
 
 var core = require('./server.core');
@@ -35,7 +35,7 @@ app.use(express.static(__dirname + '/../MapReduceJS.Client'));
 // Expose simple test client
 app.use('/test', express.static(__dirname + '/../client/test'));
 
-var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 1000000, 100000));
+var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 100000));
 
 // Socket.io
 var workers = {};

@@ -14,7 +14,7 @@ var WorkerManager = (function () {
     * Creates and starts workers
     */
     WorkerManager.prototype.initWorkers = function () {
-        var cores = 4;
+        var cores = navigator.hardwareConcurrency || 4;
 
         console.log('creating workers...');
 
