@@ -1,5 +1,7 @@
-﻿var uuid = require('node-uuid');
+﻿/// <reference path="typings/chalk/chalk.d.ts" />
 
+var uuid = require('node-uuid');
+var chalk = require('chalk');
 
 export interface IClientJobAssignment {
 	assignmentId: string;
@@ -20,13 +22,25 @@ export class ClientJobAssignment implements IClientJobAssignment {
  * A map reduce job supposed to be completed by 1 or more workers
  */
 export class Job {
+	/**
+	 * A unique job identifier
+	 */
 	public jobId: number;
+	/**
+	 * Parameters of the job
+	 */
 	public parameters: any;
 	/**
-	 * Jobs currently assigned to workers
+	 * Assignments currently assigned to workers
 	 */
 	public assignments: JobAssignment[];
+	/**
+	 * Status of the job
+	 */
 	public status: Status;
+	/**
+	 * The result of the job
+	 */
 	public result: any;
 
 	constructor() {
@@ -112,18 +126,36 @@ export enum Status {
 }
 
 export class Scheduler {
+	/**
+	 * Job redundancy
+	 * Defines the number of workers completing the same job until it
+	 * is marked as completed.
+	 */
 	private assignSingleJobToNWorker: number = 1;
-	private maxActiveJobs: number = 20;
-	private assignmentTTL: number = 30; // Seconds
+	/**
+	 * The maximum number of active jobs
+	 */
+	private maxActiveJobs: number = 4;
+	/**
+	 * The time to live of an assignment in seconds. After this time elapses,
+	 * the assignment is marked as timed out.
+	 */
+	private assignmentTTL: number = 20; // Seconds
 
 	private activeJobs: Job[];
 	private completedJobs: Job[];
 
-	constructor(private task: IMapReduceTask) {
+	constructor(private task: IMapReduceTask, maxActiveJobs: number, assignmentTTL: number) {
+		this.maxActiveJobs = maxActiveJobs;
+		this.assignmentTTL = assignmentTTL;
+
 		this.activeJobs = [];
 		this.completedJobs = [];
 	}
 
+	/**
+	 * Get a job assignment for the current task
+	 */
 	public getJob(worker: Worker): JobAssignment {
 
 		/*
@@ -141,7 +173,7 @@ export class Scheduler {
 
 			if(!job) {
 				// TODO: Handle completed
-				console.log('Scheduler: no more jobs left for the current task')
+				console.log('Scheduler: no more jobs left for the current task');
 				return null;
 			}
 
@@ -175,19 +207,28 @@ export class Scheduler {
 
 			// If we got here, no active job has an assignment free
 			if(!this.task.hasJobs()) {
-				// TODO: Handle completed
-				throw 'completed';
+				console.log(chalk.green('Scheduler: no more jobs left for the current task'));
+				return null;
 			}
 			else {
-				throw 'jobs drained';
+				console.log(chalk.red('Scheduler: job queue drained'));
+				return null;
 			}
 		}
 	}
 
+	/**
+	 * Report the completion of a job assignment
+	 */
 	public completeJob(jobAssignment: JobAssignment, result: any) {
 		// Check if timed out
 		if(jobAssignment.hasTimedOut(this.assignmentTTL)) {
-			console.log('Assignment timed out. Ignoring assignment. (' + (new Date().getTime() - jobAssignment.assigned.getTime())/1000 + 's)');
+			console.log(chalk.yellow(
+				'Assignment timed out. Ignoring assignment. ('
+				+ (new Date().getTime() - jobAssignment.assigned.getTime()) / 1000 + 's' 
+				+ ' > ' + this.assignmentTTL
+				+ 's) '
+			));
 			return;
 		}
 

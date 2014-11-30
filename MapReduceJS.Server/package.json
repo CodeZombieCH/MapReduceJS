@@ -5,6 +5,7 @@
   "main": "server.js",
   "author": "Marc-André Bühler",
   "dependencies": {
+    "chalk": "^0.5.1",
     "express": "^4.10.1",
     "node-uuid": "^1.4.1",
     "socket.io": "^1.2.0"

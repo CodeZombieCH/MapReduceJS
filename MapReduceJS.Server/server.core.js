@@ -1,4 +1,6 @@
-﻿var uuid = require('node-uuid');
+﻿/// <reference path="typings/chalk/chalk.d.ts" />
+var uuid = require('node-uuid');
+var chalk = require('chalk');
 
 var ClientJobAssignment = (function () {
     function ClientJobAssignment(assignmentId, jobId, parameters, result) {
@@ -99,14 +101,32 @@ exports.Worker = Worker;
 var Status = exports.Status;
 
 var Scheduler = (function () {
-    function Scheduler(task) {
+    function Scheduler(task, maxActiveJobs, assignmentTTL) {
         this.task = task;
+        /**
+        * Job redundancy
+        * Defines the number of workers completing the same job until it
+        * is marked as completed.
+        */
         this.assignSingleJobToNWorker = 1;
-        this.maxActiveJobs = 20;
-        this.assignmentTTL = 30;
+        /**
+        * The maximum number of active jobs
+        */
+        this.maxActiveJobs = 4;
+        /**
+        * The time to live of an assignment in seconds. After this time elapses,
+        * the assignment is marked as timed out.
+        */
+        this.assignmentTTL = 20;
+        this.maxActiveJobs = maxActiveJobs;
+        this.assignmentTTL = assignmentTTL;
+
         this.activeJobs = [];
         this.completedJobs = [];
     }
+    /**
+    * Get a job assignment for the current task
+    */
     Scheduler.prototype.getJob = function (worker) {
         /*
         * Might be a better idea to assign the latest job to workers until assignSingleJobToNWorker
@@ -144,17 +164,22 @@ var Scheduler = (function () {
 
             // If we got here, no active job has an assignment free
             if (!this.task.hasJobs()) {
-                throw 'completed';
+                console.log(chalk.green('Scheduler: no more jobs left for the current task'));
+                return null;
             } else {
-                throw 'jobs drained';
+                console.log(chalk.red('Scheduler: job queue drained'));
+                return null;
             }
         }
     };
 
+    /**
+    * Report the completion of a job assignment
+    */
     Scheduler.prototype.completeJob = function (jobAssignment, result) {
         // Check if timed out
         if (jobAssignment.hasTimedOut(this.assignmentTTL)) {
-            console.log('Assignment timed out. Ignoring assignment. (' + (new Date().getTime() - jobAssignment.assigned.getTime()) / 1000 + 's)');
+            console.log(chalk.yellow('Assignment timed out. Ignoring assignment. (' + (new Date().getTime() - jobAssignment.assigned.getTime()) / 1000 + 's' + ' > ' + this.assignmentTTL + 's) '));
             return;
         }
 

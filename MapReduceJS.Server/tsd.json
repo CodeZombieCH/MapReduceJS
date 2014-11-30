@@ -10,6 +10,9 @@
     },
     "node/node.d.ts": {
       "commit": "16fc1fb8b440e55e88bd1bbb393dcf2e9fb07d22"
+    },
+    "chalk/chalk.d.ts": {
+      "commit": "16fc1fb8b440e55e88bd1bbb393dcf2e9fb07d22"
     }
   }
 }

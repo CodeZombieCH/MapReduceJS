@@ -16,7 +16,7 @@ interface IJobAssignment {
 
 /* Worker ------------------------------------------------------------------ */
 
-var log = (message) => console.log('worker #' + workerId + ': ' + message);
+var log = (message) => console.log('worker #' + workerId + ':', message);
 
 log('preparing web worker');
 
@@ -43,16 +43,15 @@ socket.on('getJob', (jobAssignement: IJobAssignment) => {
 	}
 
 	log('job received');
+	log(jobAssignement.parameters);
 
 	// Job recieved, do something usefull
 	log('working...');
-	console.log(jobAssignement);
 	doWork(jobAssignement);
 	log('done');
 
 	// Job completed, emit result
 	socket.emit('completeJob', jobAssignement);
-
 });
 
 socket.on('completeJob', (data) => {

@@ -42,14 +42,15 @@ class WorkerManager {
 	}
 
 	/**
-	* Terminates all workers
-	*/
+	 * Terminates all workers
+	 */
 	public terminateAll() {
 		for(var i = 0; i < this.workers.length; i++) {
 			this.workers[i].terminate();
 		}
 	}
 }
+
 
 
 var workerManager = new WorkerManager();

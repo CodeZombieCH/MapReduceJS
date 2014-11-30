@@ -6,7 +6,7 @@ importScripts('/socket.io/socket.io.js');
 
 /* Worker ------------------------------------------------------------------ */
 var log = function (message) {
-    return console.log('worker #' + workerId + ': ' + message);
+    return console.log('worker #' + workerId + ':', message);
 };
 
 log('preparing web worker');
@@ -33,10 +33,10 @@ socket.on('getJob', function (jobAssignement) {
     }
 
     log('job received');
+    log(jobAssignement.parameters);
 
     // Job recieved, do something usefull
     log('working...');
-    console.log(jobAssignement);
     doWork(jobAssignement);
     log('done');
 

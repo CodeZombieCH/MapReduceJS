@@ -1,5 +1,6 @@
 ﻿/// <reference path="typings/socket.io/socket.io.d.ts" />
 /// <reference path="typings/node/node.d.ts" />
+/// <reference path="typings/chalk/chalk.d.ts" />
 
 
 // Setup basic express server
@@ -9,6 +10,7 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
 var uuid = require('node-uuid');
+var chalk = require('chalk');
 
 import core = require('./server.core');
 
@@ -37,25 +39,26 @@ app.use(express.static(__dirname + '/../MapReduceJS.Client'));
 // Expose simple test client
 app.use('/test', express.static(__dirname + '/../client/test'));
 
+var scheduler =
+	// Testing settings: Verify time out of job assignments
+	//new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 100000), 4, 20);
+	// Testing settings: Verify completion
+	//new core.Scheduler(new core.PrimesMapReduceTask(0, 1000000, 100000), 10, 30);
+	// Live settings: 
+	new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 10000), 50, 30);
 
-
-var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 100000));
-
+var workers = {};
 
 // Socket.io
-var workers = {};
-var count = 0;
-
 io.on('connection', function(socket) {
 
 	socket.on('workerReady', function (message) {
-		console.log('worker ready');
+		console.log(chalk.green('worker #' + socket.id + ' ready'));
 
 		// we store the newly assigned worker id in the socket session for this worker
-		//var worker = socket.worker = new core.Worker(uuid.v4());
 		var worker = socket.worker = new core.Worker(socket.id);
 
-		// add the client's username to the global list
+		// add the worker to the global list
 		workers[worker.workerId] = worker;
 
 		socket.emit('workerReady', socket.worker);
@@ -102,9 +105,11 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('disconnect', function() {
-		console.log('worker #' + (socket.worker && socket.worker.workerId || socket.id) + ' disconnected');
+		if(workers[socket.id]) {
+			console.log(chalk.red('worker #' + (socket.id) + ' disconnected'));
 
-		delete workers[socket.id];
+			delete workers[socket.id];
+		}
 
 		socket.broadcast.emit('statsUpdate', Object.keys(workers).length);
 	});
