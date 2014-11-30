@@ -37,6 +37,11 @@ socket.on('workerReady', (data) => {
 });
 
 socket.on('getJob', (jobAssignement: IJobAssignment) => {
+	if(!jobAssignement) {
+		log('No more jobs left. Halting now');
+		return;
+	}
+
 	log('job received');
 
 	// Job recieved, do something usefull

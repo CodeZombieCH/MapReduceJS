@@ -28,7 +28,7 @@ function drawChart() {
 	data.addColumn('datetime', 'Snapshot Time');
 	data.addColumn('number', '# of Workers');
 
-	chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+	chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
 
 	chart.draw(data, options);
 

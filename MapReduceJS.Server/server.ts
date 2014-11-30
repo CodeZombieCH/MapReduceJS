@@ -43,7 +43,7 @@ var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 1000000, 1000
 
 
 // Socket.io
-var workers = [];
+var workers = {};
 var count = 0;
 
 io.on('connection', function(socket) {
@@ -52,14 +52,15 @@ io.on('connection', function(socket) {
 		console.log('worker ready');
 
 		// we store the newly assigned worker id in the socket session for this worker
-		var worker = socket.worker = new core.Worker(uuid.v4());
+		//var worker = socket.worker = new core.Worker(uuid.v4());
+		var worker = socket.worker = new core.Worker(socket.id);
 
 		// add the client's username to the global list
-		workers.push(worker);
+		workers[worker.workerId] = worker;
 
 		socket.emit('workerReady', socket.worker);
 
-		socket.broadcast.emit('statsUpdate', workers.length);
+		socket.broadcast.emit('statsUpdate', Object.keys(workers).length);
 	});
 
 	socket.on('getJob', function(message) {
@@ -70,11 +71,14 @@ io.on('connection', function(socket) {
 		var jobAssignment = scheduler.getJob(socket.worker);
 		socket.assignment = jobAssignment;
 
-		console.log('assigned job #' + jobAssignment.AssignmentId);
-
-		socket.emit('getJob', jobAssignment.getClientAssignment());
-		//socket.emit('getJob', { parameters: { from: count, to: (count += 100000) } });
-		
+		if(jobAssignment) {
+			console.log('assigned job #' + jobAssignment.AssignmentId);
+			socket.emit('getJob', jobAssignment.getClientAssignment());
+		}
+		else {
+			console.log('no more jobs left');
+			socket.emit('getJob', undefined);
+		}
 	});
 
 	socket.on('completeJob', function(clientJobAssignement: core.IClientJobAssignment) {
@@ -94,15 +98,15 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('stats', function() {
-		socket.emit('stats', workers.length);
+		socket.emit('stats', Object.keys(workers).length);
 	});
 
 	socket.on('disconnect', function() {
-		console.log('worker #' + (socket.worker && socket.worker.workerId || undefined) + ' disconnected');
+		console.log('worker #' + (socket.worker && socket.worker.workerId || socket.id) + ' disconnected');
 
-		workers.remove(socket.worker);
+		delete workers[socket.id];
 
-		socket.broadcast.emit('statsUpdate', workers.length);
+		socket.broadcast.emit('statsUpdate', Object.keys(workers).length);
 	});
 });
 

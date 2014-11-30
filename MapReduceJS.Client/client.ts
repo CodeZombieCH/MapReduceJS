@@ -23,7 +23,7 @@ class WorkerManager {
 	 * Creates and starts workers
 	 */
 	private initWorkers() {
-		var cores = 1//navigator.hardwareConcurrency || 4;
+		var cores = 4//navigator.hardwareConcurrency || 4;
 
 		console.log('creating workers...');
 
@@ -36,8 +36,6 @@ class WorkerManager {
 
 		console.log('workers created');
 	}
-
-
 
 	/**
 	* Terminates all workers
@@ -52,6 +50,9 @@ class WorkerManager {
 
 var workerManager = new WorkerManager();
 
+/**
+ * Convenience method to stop all worker
+ */
 function stop() {
 	workerManager.terminateAll();
 }

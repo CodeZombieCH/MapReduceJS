@@ -113,7 +113,7 @@ export enum Status {
 
 export class Scheduler {
 	private assignSingleJobToNWorker: number = 1;
-	private maxActiveJobs: number = 5;
+	private maxActiveJobs: number = 20;
 	private assignmentTTL: number = 30; // Seconds
 
 	private activeJobs: Job[];
@@ -141,7 +141,8 @@ export class Scheduler {
 
 			if(!job) {
 				// TODO: Handle completed
-				throw 'completed';
+				console.log('Scheduler: no more jobs left for the current task')
+				return null;
 			}
 
 			this.activeJobs.push(job);
@@ -272,7 +273,7 @@ export class PrimesMapReduceTask implements IMapReduceTask {
 	}
 
 	public hasJobs() : boolean {
-		return (this.current + this.chunkSize) < this.to;
+		return (this.current + this.chunkSize) <= this.to;
 	}
 }
 
