@@ -7,10 +7,13 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
+var taskName = process.env.TASK || 'primes';
 var uuid = require('node-uuid');
 var chalk = require('chalk');
 
+// Import TypeScript dependencies
 var core = require('./server.core');
+var task = require('./tasks/' + taskName);
 
 server.listen(port, function () {
     console.log('');
@@ -37,7 +40,7 @@ app.use(express.static(__dirname + '/../MapReduceJS.Client'));
 // Expose simple test client
 app.use('/test', express.static(__dirname + '/../client/test'));
 
-var scheduler = new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 10000), 50, 30);
+var scheduler = new core.Scheduler(new task.PrimesMapReduceTask(0, 100000000, 10000), 50, 30);
 
 var workers = {};
 
@@ -119,5 +122,6 @@ process.on('SIGTERM', function () {
 
 function shutdown() {
     // some other closing procedures go here
+    // TODO: Give the underlying task the opportunity to shutdown gracefully (by persisting current state)
 }
 //# sourceMappingURL=server.js.map

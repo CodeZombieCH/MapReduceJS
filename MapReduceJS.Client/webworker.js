@@ -3,6 +3,10 @@
 // Import socket.io
 importScripts('/socket.io/socket.io.js');
 
+// Load task
+// TODO: Return as parameter when worker registers at the server
+importScripts('/tasks/primes.js');
+
 
 /* Worker ------------------------------------------------------------------ */
 var log = function (message) {
@@ -55,25 +59,4 @@ socket.on('completeJob', function (data) {
 // Get the wheels turning...
 log('get the wheels turning');
 socket.emit('workerReady');
-
-/* The actual work --------------------------------------------------------- */
-var isPrime = function (num) {
-    if (num < 2)
-        return false;
-    for (var i = 2; i < num; i++) {
-        if (num % i == 0)
-            return false;
-    }
-    return true;
-};
-
-var doWork = function (jobAssignement) {
-    // the actual work
-    jobAssignement.result = [];
-
-    for (var i = jobAssignement.parameters.from; i <= jobAssignement.parameters.to; i++) {
-        if (isPrime(i))
-            jobAssignement.result.push(i);
-    }
-};
 //# sourceMappingURL=webworker.js.map
