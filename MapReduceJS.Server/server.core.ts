@@ -286,37 +286,6 @@ export interface IMapReduceTask {
 	hasJobs(): boolean;
 }
 
-export class PrimesMapReduceTask implements IMapReduceTask {
-	private current: number = 0;
-
-	constructor(private from: number, public to: number, private chunkSize: number) {
-	}
-
-	public createJob(): Job {
-		if(!this.hasJobs()) return null;
-
-		console.log('Task: creating job')
-
-		var job = new Job();
-		job.jobId = this.current;
-		job.parameters = { from: this.current, to: this.current + this.chunkSize - 1 };
-
-		this.current += this.chunkSize;
-
-		return job;
-	}
-
-	public completeJob(job: Job) {
-		console.log('Task: completing job')
-		console.log('Task: highest prime number of job: ' + job.result[job.result.length - 1]);
-
-		// TODO: Persist, reduce, whatever you need
-	}
-
-	public hasJobs() : boolean {
-		return (this.current + this.chunkSize) <= this.to;
-	}
-}
 
 
 // Utils

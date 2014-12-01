@@ -2,17 +2,19 @@
 /// <reference path="typings/node/node.d.ts" />
 /// <reference path="typings/chalk/chalk.d.ts" />
 
-
 // Setup basic express server
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
+var taskName = process.env.TASK || 'primes';
 var uuid = require('node-uuid');
 var chalk = require('chalk');
 
+// Import TypeScript dependencies
 import core = require('./server.core');
+var task = require('./tasks/' + taskName);
 
 server.listen(port, function () {
 	console.log('');
@@ -41,11 +43,11 @@ app.use('/test', express.static(__dirname + '/../client/test'));
 
 var scheduler =
 	// Testing settings: Verify time out of job assignments
-	//new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 100000), 4, 20);
+	//new core.Scheduler(new task.PrimesMapReduceTask(0, 100000000, 100000), 4, 20);
 	// Testing settings: Verify completion
-	//new core.Scheduler(new core.PrimesMapReduceTask(0, 1000000, 100000), 10, 30);
+	//new core.Scheduler(new task.PrimesMapReduceTask(0, 1000000, 100000), 10, 30);
 	// Live settings: 
-	new core.Scheduler(new core.PrimesMapReduceTask(0, 100000000, 10000), 50, 30);
+	new core.Scheduler(new task.PrimesMapReduceTask(0, 100000000, 10000), 50, 30);
 
 var workers = {};
 
@@ -129,4 +131,5 @@ process.on('SIGTERM', function() {
 
 function shutdown() {
 	// some other closing procedures go here
+	// TODO: Give the underlying task the opportunity to shutdown gracefully (by persisting current state)
 }
