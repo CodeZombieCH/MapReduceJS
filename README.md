@@ -14,18 +14,26 @@ on the client side and Node.js on the server side.
 
 ## Installation
 
+### Client Installation
+
+	cd ./MapReduceJS.Client
     npm install
-    tsd reinstall
+
+### Server Installation
+
+	cd ./MapReduceJS.Server
+    npm install
 
 ## Run
 
 Start the server with
 
-    node .
+	cd ./MapReduceJS.Server
+    PORT=3000 node .
 
-Now open a browser and open http://localhost:3000/
+Now open a browser and navigate to http://localhost:3000/
 
-Check the terminal you are running node for workers connecting and requesting
+Check the terminal you are running node from for workers connecting and requesting
 jobs. Open the browser console for information about the spawned web workers.
 
 
@@ -38,6 +46,7 @@ I recommend to install the `nodemon` module globally using
 and then start the server with
 
     nodemon .
+
 
 ## License
 
